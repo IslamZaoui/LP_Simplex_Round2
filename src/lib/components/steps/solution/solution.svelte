@@ -1,0 +1,58 @@
+<script lang="ts">
+	import * as Card from '@/components/ui/card';
+	import { Button } from '@/components/ui/button';
+	import { Simplex } from '@/simplex.svelte';
+	import Table from './table.svelte';
+	import Form from './form.svelte';
+
+	interface Props {
+		simplex: Simplex;
+		step: number;
+	}
+
+	let { simplex = $bindable(), step = $bindable() }: Props = $props();
+	let varNum = $derived(simplex.objectiveFunction.length);
+	let constNum = $derived(simplex.constraints.length);
+</script>
+
+<Card.Root class="w-full">
+	<Card.Header>
+		<Card.Title>Simplex Solution</Card.Title>
+		<Card.Description>Step-by-step solution tables</Card.Description>
+	</Card.Header>
+	<Card.Content class="flex flex-col gap-4">
+		<Form {simplex} />
+
+		{#each [...simplex.solve()] as iteration}
+			<div class="p-4">
+				<h3 class="mb-2 font-semibold">
+					Iteration {iteration.iteration}
+					{#if iteration.isOptimal}
+						(Optimal Solution)
+					{/if}
+				</h3>
+
+				<Table {varNum} {constNum} {iteration} />
+			</div>
+		{/each}
+
+		<div class="mt-4">
+			<h3 class="mb-2 font-semibold">Final Solution</h3>
+			<p>
+				Variables: {simplex
+					.getSolution()
+					.map((val, i) => `x${i + 1} = ${val.toFixed(2)}`)
+					.join(', ')}
+			</p>
+			<p class="mt-1">
+				Optimal Z value: {simplex.tableau[simplex.tableau.length - 1][
+					simplex.tableau[0].length - 1
+				].toFixed(2)}
+			</p>
+		</div>
+	</Card.Content>
+	<Card.Footer class="flex justify-end gap-4">
+		<Button onclick={() => (step = 1)} variant="outline">Back</Button>
+		<Button onclick={() => (step = 0)}>New Problem</Button>
+	</Card.Footer>
+</Card.Root>
