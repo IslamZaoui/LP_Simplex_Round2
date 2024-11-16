@@ -43,15 +43,17 @@ export class Simplex {
 		this.iteration = 0;
 
 		while (true) {
+			// Find entering variable
 			const enteringCol = this.tableau[this.tableau.length - 1]
 				.slice(0, -1)
 				.reduce((iMin, x, i, arr) => (x < arr[iMin] ? i : iMin), 0);
 
+            // Check optimality
 			const isOptimal = this.tableau[this.tableau.length - 1][enteringCol] >= -1e-10;
 
+			// Find leaving variable
 			let leavingRow = -1;
 			let minRatio = Infinity;
-
 			for (let i = 0; i < this.tableau.length - 1; i++) {
 				if (this.tableau[i][enteringCol] <= 0) continue;
 				const currentValue = this.tableau[i][this.tableau[0].length - 1];
@@ -61,6 +63,7 @@ export class Simplex {
 				}
 			}
 
+			// Yield the state before pivot calculations
 			yield {
 				iteration: this.iteration,
 				tableau: this.tableau.map((row) => [...row]),
@@ -75,8 +78,45 @@ export class Simplex {
 			if (isOptimal) break;
 			if (leavingRow === -1) throw new Error('Problem is unbounded');
 
+			// Calculate intermediate tableau with pivot row and column adjustments
+			const intermediateTableau = this.tableau.map((row) => [...row]);
+			const pivotValue = intermediateTableau[leavingRow][enteringCol];
+
+			// Normalize pivot row
+			for (let j = 0; j < intermediateTableau[0].length; j++) {
+				intermediateTableau[leavingRow][j] /= pivotValue;
+			}
+
+			// Calculate pivot column values
+			for (let i = 0; i < intermediateTableau.length; i++) {
+				if (i !== leavingRow) {
+					const factor = intermediateTableau[i][enteringCol];
+					intermediateTableau[i][enteringCol] = 0;
+				}
+			}
+
+			// Yield intermediate state (after calculating pivot row and column)
+			yield {
+				iteration: this.iteration + 0.5,
+				tableau: intermediateTableau,
+				enteringVar: enteringCol,
+				leavingVar: leavingRow,
+				pivot: [leavingRow, enteringCol],
+				basis: [...this.basis],
+				currentValue:
+					-intermediateTableau[intermediateTableau.length - 1][intermediateTableau[0].length - 1],
+				isOptimal: false
+			};
+
+			// Perform complete pivot operation
 			this.basis[leavingRow] = enteringCol;
 
+			// Normalize pivot row
+			for (let j = 0; j < this.tableau[0].length; j++) {
+				this.tableau[leavingRow][j] /= pivotValue;
+			}
+
+			// Update rest of tableau
 			for (let i = 0; i < this.tableau.length; i++) {
 				if (i === leavingRow) continue;
 				const factor = this.tableau[i][enteringCol];
@@ -100,4 +140,18 @@ export class Simplex {
 		}
 		return solution;
 	}
+}
+
+declare global {
+	type Matrix<T> = Array<T>[];
+	type SimplexIteration = {
+		iteration: number;
+		tableau: Matrix<number>;
+		enteringVar: number;
+		leavingVar: number;
+		pivot: [number, number];
+		basis: Array<number>;
+		currentValue: number;
+		isOptimal: boolean;
+	};
 }

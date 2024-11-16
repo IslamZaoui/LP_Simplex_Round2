@@ -13,6 +13,7 @@
 	let { simplex = $bindable(), step = $bindable() }: Props = $props();
 	let varNum = $derived(simplex.objectiveFunction.length);
 	let constNum = $derived(simplex.constraints.length);
+	let iterations = $derived([...simplex.solve()]);
 </script>
 
 <Card.Root class="w-full">
@@ -23,17 +24,8 @@
 	<Card.Content class="flex flex-col gap-4">
 		<Form {simplex} />
 
-		{#each [...simplex.solve()] as iteration}
-			<div class="p-4">
-				<h3 class="mb-2 font-semibold">
-					Iteration {iteration.iteration}
-					{#if iteration.isOptimal}
-						(Optimal Solution)
-					{/if}
-				</h3>
-
-				<Table {varNum} {constNum} {iteration} />
-			</div>
+		{#each iterations as iteration, i}
+			<Table {varNum} {constNum} {iteration} />
 		{/each}
 
 		<div class="mt-4">
