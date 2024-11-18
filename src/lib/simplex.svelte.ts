@@ -48,7 +48,7 @@ export class Simplex {
 				.slice(0, -1)
 				.reduce((iMin, x, i, arr) => (x < arr[iMin] ? i : iMin), 0);
 
-            // Check optimality
+			// Check optimality
 			const isOptimal = this.tableau[this.tableau.length - 1][enteringCol] >= -1e-10;
 
 			// Find leaving variable
@@ -72,11 +72,12 @@ export class Simplex {
 				pivot: leavingRow !== -1 ? [leavingRow, enteringCol] : [-1, -1],
 				basis: [...this.basis],
 				currentValue: -this.tableau[this.tableau.length - 1][this.tableau[0].length - 1],
-				isOptimal
+				isOptimal,
+				error: leavingRow === -1 ? 'This problem has an unbounded solution' : undefined
 			};
 
 			if (isOptimal) break;
-			if (leavingRow === -1) throw new Error('Problem is unbounded');
+			if (leavingRow === -1) return -1;
 
 			// Calculate intermediate tableau with pivot row and column adjustments
 			const intermediateTableau = this.tableau.map((row) => [...row]);
@@ -153,5 +154,6 @@ declare global {
 		basis: Array<number>;
 		currentValue: number;
 		isOptimal: boolean;
+		error?: string;
 	};
 }

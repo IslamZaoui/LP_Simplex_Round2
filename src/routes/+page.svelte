@@ -1,7 +1,5 @@
 <script lang="ts">
-	import GenerateModel from '@/components/steps/generate-model.svelte';
-	import SetValues from '@/components/steps/set-values.svelte';
-	import Solution from '@/components/steps/solution/solution.svelte';
+	import { GenerateModel, SetValues, Solution } from '@/components/steps';
 	import type { Simplex } from '@/simplex.svelte';
 	import { fade } from 'svelte/transition';
 
