@@ -29,7 +29,7 @@
 						{:else if j < varNum + constNum}
 							s{j - varNum + 1}
 						{:else if j >= varNum + constNum}
-							A
+							a
 						{/if}
 					</Table.Head>
 				{/each}

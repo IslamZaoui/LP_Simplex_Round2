@@ -22,7 +22,7 @@ function generateModel(varNum: number, constNum: number): [Array<number>, Matrix
 	return [objectiveFunction, constraints];
 }
 
-function transpose<T>(matrix: Matrix<T>): Matrix<T> {
+export function transpose<T>(matrix: Matrix<T>): Matrix<T> {
 	if (matrix.length === 0) return [];
 	return matrix[0].map((_, colIndex) => matrix.map((row) => row[colIndex]));
 }
