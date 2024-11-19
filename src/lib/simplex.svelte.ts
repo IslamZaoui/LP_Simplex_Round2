@@ -1,55 +1,117 @@
+declare global {
+	type Matrix<T> = Array<T>[];
+	type SimplexIteration = {
+		iteration: number;
+		tableau: Matrix<number>;
+		enteringVar: number;
+		leavingVar: number;
+		pivot: [number, number];
+		basis: Array<number>;
+		currentValue: number;
+		isOptimal: boolean;
+		error?: string;
+	};
+}
+
 function generateModel(varNum: number, constNum: number): [Array<number>, Matrix<number>] {
+	if (varNum <= 0 || constNum <= 0) {
+		throw new Error('Number of variables and constraints must be positive');
+	}
 	const constraints = Array.from({ length: constNum }, () => Array(varNum + 1).fill(0));
 	const objectiveFunction = Array(varNum).fill(0);
 	return [objectiveFunction, constraints];
 }
 
+function transpose<T>(matrix: Matrix<T>): Matrix<T> {
+	if (matrix.length === 0) return [];
+	return matrix[0].map((_, colIndex) => matrix.map((row) => row[colIndex]));
+}
+
 export class Simplex {
-	objectiveFunction: Array<number> = $state([]);
-	constraints: Matrix<number> = $state([]);
+	objectiveFunctionState: Array<number> = $state([]);
+	constraintsState: Matrix<number> = $state([]);
+	objectiveState: 'Max' | 'Min' = $state('Max');
+
+	objectiveFunction: Array<number> = [];
+	constraints: Matrix<number> = [];
+	objective: 'Max' | 'Min' = 'Max';
+
 	tableau: Matrix<number>;
 	basis: Array<number>;
 	iteration: number = 0;
 
 	constructor(varNum: number, constNum: number) {
-		[this.objectiveFunction, this.constraints] = generateModel(varNum, constNum);
+		[this.objectiveFunctionState, this.constraintsState] = generateModel(varNum, constNum);
 		this.tableau = [];
 		this.basis = [];
 	}
 
+	getReactiveStates(): void {
+		this.constraints = this.constraintsState;
+		this.objectiveFunction = this.objectiveFunctionState;
+		this.objective = this.objectiveState;
+	}
+
 	prepare(): void {
+		if (this.objective === 'Min') {
+			const augmentedObjective = [...this.objectiveFunction, 1];
+			const fullMatrix: Matrix<number> = [...this.constraints, augmentedObjective];
+			const transposed = transpose<number>(fullMatrix);
+			this.constraints = transposed.slice(0, -1);
+			this.objectiveFunction = [...transposed[transposed.length - 1].slice(0, -1)];
+		}
+
 		const m = this.constraints.length;
 		const n = this.objectiveFunction.length;
 
-		this.tableau = Array.from({ length: m + 1 }, () => Array(n + m + 1).fill(0));
+		this.tableau = Array.from({ length: m + 1 }, () =>
+			Array(n + m + (this.objective === 'Min' ? 2 : 1)).fill(0)
+		);
 
 		for (let i = 0; i < m; i++) {
 			for (let j = 0; j < n; j++) {
 				this.tableau[i][j] = this.constraints[i][j];
 			}
 			this.tableau[i][n + i] = 1;
-			this.tableau[i][n + m] = this.constraints[i][n];
+			if (this.objective === 'Min') {
+				this.tableau[i][n + m] = 0;
+				this.tableau[i][n + m + 1] = this.constraints[i][n];
+			} else {
+				this.tableau[i][n + m] = this.constraints[i][n];
+			}
 		}
 
 		for (let j = 0; j < n; j++) {
 			this.tableau[m][j] = -this.objectiveFunction[j];
 		}
+		if (this.objective === 'Min') {
+			this.tableau[m][n + m] = 1;
+		}
 
 		this.basis = Array.from({ length: m }, (_, i) => n + i);
+
+		this.objective = 'Max';
 	}
 
 	*solve(): Generator<SimplexIteration, number, unknown> {
+		this.getReactiveStates();
+
+		if (this.objectiveFunction.length === 0 || this.constraints.length === 0) {
+			throw new Error('Invalid problem: Empty objective function or constraints');
+		}
+
 		this.prepare();
-		this.iteration = 0;
 
 		while (true) {
-			// Find entering variable
+			// Find entering variable - exclude the artificial variable column for minimization
+			const endIndex =
+				this.objective === 'Min' ? this.tableau[0].length - 2 : this.tableau[0].length - 1;
 			const enteringCol = this.tableau[this.tableau.length - 1]
-				.slice(0, -1)
+				.slice(0, endIndex)
 				.reduce((iMin, x, i, arr) => (x < arr[iMin] ? i : iMin), 0);
 
 			// Check optimality
-			const isOptimal = this.tableau[this.tableau.length - 1][enteringCol] >= -1e-10;
+			const isOptimal = this.tableau[this.tableau.length - 1][enteringCol] >= -Number.EPSILON;
 
 			// Find leaving variable
 			let leavingRow = -1;
@@ -57,8 +119,9 @@ export class Simplex {
 			for (let i = 0; i < this.tableau.length - 1; i++) {
 				if (this.tableau[i][enteringCol] <= 0) continue;
 				const currentValue = this.tableau[i][this.tableau[0].length - 1];
-				if (currentValue * minRatio > this.tableau[i][enteringCol]) {
-					minRatio = currentValue / this.tableau[i][enteringCol];
+				const ratio = currentValue / this.tableau[i][enteringCol];
+				if (ratio < minRatio) {
+					minRatio = ratio;
 					leavingRow = i;
 				}
 			}
@@ -91,7 +154,6 @@ export class Simplex {
 			// Calculate pivot column values
 			for (let i = 0; i < intermediateTableau.length; i++) {
 				if (i !== leavingRow) {
-					const factor = intermediateTableau[i][enteringCol];
 					intermediateTableau[i][enteringCol] = 0;
 				}
 			}
@@ -136,24 +198,10 @@ export class Simplex {
 		const solution = Array(this.objectiveFunction.length).fill(0);
 		for (let i = 0; i < this.basis.length; i++) {
 			if (this.basis[i] < this.objectiveFunction.length) {
-				solution[this.basis[i]] = this.tableau[i][this.tableau[0].length - 1];
+				const value = this.tableau[i][this.tableau[0].length - 1];
+				solution[this.basis[i]] = Math.abs(value) < Number.EPSILON ? 0 : value;
 			}
 		}
 		return solution;
 	}
-}
-
-declare global {
-	type Matrix<T> = Array<T>[];
-	type SimplexIteration = {
-		iteration: number;
-		tableau: Matrix<number>;
-		enteringVar: number;
-		leavingVar: number;
-		pivot: [number, number];
-		basis: Array<number>;
-		currentValue: number;
-		isOptimal: boolean;
-		error?: string;
-	};
 }

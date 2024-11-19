@@ -13,10 +13,10 @@
 	<div class="flex flex-col">
 		<Katex math={`\\text{Liear Program: }`} />
 		<Katex
-			math={`\\text{Maximize } Z = ${simplex.objectiveFunction.map((coef, i) => `${coef}x_${i + 1}`).join(' + ')}`}
+			math={`\\text{Maximize } Z = ${simplex.objectiveFunctionState.map((coef, i) => `${coef}x_${i + 1}`).join(' + ')}`}
 		/>
 		<Katex math={`\\text{Subject to }`} />
-		{#each simplex.constraints as constraint, i}
+		{#each simplex.constraintsState as constraint, i}
 			<Katex
 				math={`\\quad ${constraint
 					.slice(0, -1)
@@ -24,7 +24,7 @@
 					.join(' + ')} \\leq ${constraint[constraint.length - 1]}`}
 			/>
 		{/each}
-		<Katex math={`\\quad ${simplex.objectiveFunction.map((_, i) => `x_${i + 1}`)} \\geq 0`} />
+		<Katex math={`\\quad ${simplex.objectiveFunctionState.map((_, i) => `x_${i + 1}`)} \\geq 0`} />
 	</div>
 
 	<Katex math={`\\Downarrow`} />
@@ -32,10 +32,10 @@
 	<div class="flex flex-col">
 		<Katex math={`\\text{Canonical Form: }`} />
 		<Katex
-			math={`\\text{Maximize } Z = ${simplex.objectiveFunction.map((coef, i) => `${coef}x_${i + 1}`).join(' + ')} + ${simplex.constraints.map((_, i) => `s_${i + 1}`).join(' + ')}`}
+			math={`\\text{Maximize } Z = ${simplex.objectiveFunctionState.map((coef, i) => `${coef}x_${i + 1}`).join(' + ')} + ${simplex.constraintsState.map((_, i) => `s_${i + 1}`).join(' + ')}`}
 		/>
 		<Katex math={`\\text{Subject to }`} />
-		{#each simplex.constraints as constraint, i}
+		{#each simplex.constraintsState as constraint, i}
 			<Katex
 				math={`\\quad ${constraint
 					.slice(0, -1)
@@ -44,7 +44,7 @@
 			/>
 		{/each}
 		<Katex
-			math={`\\quad ${simplex.objectiveFunction.map((_, i) => `x_${i + 1}`)},${simplex.constraints.map((_, i) => `s_${i + 1}`)} \\geq 0`}
+			math={`\\quad ${simplex.objectiveFunctionState.map((_, i) => `x_${i + 1}`)},${simplex.constraintsState.map((_, i) => `s_${i + 1}`)} \\geq 0`}
 		/>
 	</div>
 </div>

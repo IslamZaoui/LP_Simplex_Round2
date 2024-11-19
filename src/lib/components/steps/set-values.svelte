@@ -1,5 +1,6 @@
 <script lang="ts">
 	import * as Card from '@/components/ui/card';
+	import * as Select from '$lib/components/ui/select';
 	import { Input } from '@/components/ui/input';
 	import { Button } from '@/components/ui/button';
 	import { Simplex } from '@/simplex.svelte';
@@ -20,35 +21,43 @@
 	</Card.Header>
 	<Card.Content class="flex flex-col gap-3">
 		<div class="flex items-center gap-2">
-			<Katex math={`\\max Z =`} />
-			{#each Array(simplex.objectiveFunction.length) as _, index}
+			<Select.Root type="single" bind:value={simplex.objectiveState}>
+				<Select.Trigger>{simplex.objectiveState ?? 'Objective'}</Select.Trigger>
+				<Select.Content>
+					{#each ['Max', 'Min'] as p}
+						<Select.Item value={p}>{p}</Select.Item>
+					{/each}
+				</Select.Content>
+			</Select.Root>
+			<Katex math={`\\Z =`} />
+			{#each Array(simplex.objectiveFunctionState.length) as _, index}
 				<Input
 					type="number"
-					bind:value={simplex.objectiveFunction[index]}
+					bind:value={simplex.objectiveFunctionState[index]}
 					placeholder={`Coefficient for x${index + 1}`}
 				/>
 				<Katex math={`x${index + 1}`} />
-				{#if index !== simplex.objectiveFunction.length - 1}
+				{#if index !== simplex.objectiveFunctionState.length - 1}
 					<Katex math={`+`} />
 				{/if}
 			{/each}
 		</div>
 		<div class="ml-[75px] flex flex-col gap-2">
-			{#each simplex.constraints as constraint}
+			{#each simplex.constraintsState as constraint}
 				<div class="flex items-center gap-2">
-					{#each Array(simplex.objectiveFunction.length) as _, varIndex}
+					{#each Array(simplex.objectiveFunctionState.length) as _, varIndex}
 						<Input
 							type="number"
 							bind:value={constraint[varIndex]}
 							placeholder={`Coefficient for x${varIndex + 1}`}
 						/>
 						<Katex math={`x${varIndex + 1}`} />
-						{#if varIndex !== simplex.objectiveFunction.length - 1}
+						{#if varIndex !== simplex.objectiveFunctionState.length - 1}
 							<Katex math={`+`} />
 						{/if}
 					{/each}
-					<Katex math={`\\leq`} />
-					<Input type="number" bind:value={constraint[simplex.objectiveFunction.length]} />
+					<Katex math={simplex.objectiveState === 'Min' ? '\\geq' : '\\leq'} />
+					<Input type="number" bind:value={constraint[simplex.objectiveFunctionState.length]} />
 				</div>
 			{/each}
 		</div>

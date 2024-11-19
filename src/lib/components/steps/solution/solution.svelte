@@ -11,8 +11,8 @@
 	}
 
 	let { simplex = $bindable(), step = $bindable() }: Props = $props();
-	let varNum = $derived(simplex.objectiveFunction.length);
-	let constNum = $derived(simplex.constraints.length);
+	let varNum = $derived(simplex.objectiveFunctionState.length);
+	let constNum = $derived(simplex.constraintsState.length);
 	let iterations = $derived([...simplex.solve()]);
 </script>
 

@@ -21,6 +21,11 @@
 			return;
 		}
 
+		if (!Number.isInteger(varNum) || !Number.isInteger(constNum)) {
+			toast.error('Number of variables and constraints must be integers');
+			return;
+		}
+
 		simplex = new Simplex(varNum, constNum);
 
 		step = 1;
